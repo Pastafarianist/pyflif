@@ -12,20 +12,22 @@ Logger.setLevel("WARN")
 
 
 class FlifEncoderImage(FlifImageBase):
-    mImage = None
-    mImporter = None
+    image = None
+    importer = None
 
     flif_image_handle = None
 
     def __init__(self, np_image):
-        self.mImporter = self.get_flif_importer(np_image)
-        self.mImage = self.correct_image_strides(np_image)
+        self.importer = self.get_flif_importer(np_image)
+        self.image = self.correct_image_strides(np_image)
 
     def __enter__(self):
-        assert (0 == (self.mImage.strides[0] % self.mImage.ndim))
-        self.flif_image_handle = self.mImporter(self.mImage.shape[1], self.mImage.shape[0],
-                                                self.mImage.ctypes.data_as(ct.c_void_p),
-                                                self.mImage.strides[0] / self.mImage.ndim)
+        assert (0 == (self.image.strides[0] % self.image.ndim))
+        self.flif_image_handle = self.importer(
+            self.image.shape[1], self.image.shape[0],
+            self.image.ctypes.data_as(ct.c_void_p),
+            self.image.strides[0] // self.image.ndim,
+        )
 
         Logger.debug("Using FLIF image importer %s", repr(self.flif_image_handle))
 
@@ -41,20 +43,20 @@ class FlifEncoderImage(FlifImageBase):
         flif = cls.Flif
 
         # check images planes
-        if 2 == np_image.ndim:
+        if np_image.ndim == 2:
             # gray scale image
             img_type = "gray"
             importer = (flif.import_image_GRAY, flif.import_image_GRAY16)
-        elif (3 == np_image.ndim) and (3 == np_image.shape[2]):
+        elif np_image.ndim == 3 and np_image.shape[2] == 3:
             # RGB Image
             img_type = "RGB"
             importer = (flif.import_image_RGB,)
-        elif (3 == np_image.ndim) and (4 == np_image.shape[2]):
+        elif np_image.ndim == 3 and np_image.shape[2] == 4:
             # RGBA Image
             img_type = "RGBA"
             importer = (flif.import_image_RGBA,)
         else:
-            raise ValueError("Unsupported image shape '%s'" % repr(np_image.shape))
+            raise ValueError(f"Unsupported image shape {np_image.shape!r}")
 
         # check dtype
         if np.issubdtype(np_image.dtype, np.uint8):
@@ -98,20 +100,20 @@ class FlifEncoder(FlifEncoderBase):
     flif_encoder_handle = None
     fname = None
 
-    mDoCrcCheck = None
-    mInterlaced = None
-    mLearnRepeat = None
-    mSplitThreshold = None
-    mMaxLoss = None
+    do_crc_check = None
+    interlaced = None
+    learn_repeat = None
+    split_threshold = None
+    max_loss = None
 
     def __init__(self, fname, crc_check=True, interlaced=False, learn_repeat=4, split_threshold_factor=12, maxloss=0):
         self.fname = fname
 
-        self.mDoCrcCheck = int(bool(crc_check))
-        self.mInterlaced = int(bool(interlaced))
-        self.mLearnRepeat = max(0, int(learn_repeat))
-        self.mSplitThreshold = 5461 * 8 * max(4, int(split_threshold_factor))
-        self.mMaxLoss = max(0, min(100, int(maxloss)))
+        self.do_crc_check = int(bool(crc_check))
+        self.interlaced = int(bool(interlaced))
+        self.learn_repeat = max(0, int(learn_repeat))
+        self.split_threshold = 5461 * 8 * max(4, int(split_threshold_factor))
+        self.max_loss = max(0, min(100, int(maxloss)))
 
     def __del__(self):
         self.close()
@@ -134,18 +136,18 @@ class FlifEncoder(FlifEncoderBase):
         self.flif_encoder_handle = self.Flif.create_encoder()
         Logger.debug("Create FLIF encoder %r", self.flif_encoder_handle)
 
-        self.Flif.set_interlaced(self.flif_encoder_handle, self.mInterlaced)
-        self.Flif.set_learn_repeat(self.flif_encoder_handle, self.mLearnRepeat)
-        self.Flif.set_split_threshold(self.flif_encoder_handle, self.mSplitThreshold)
-        self.Flif.set_crc_check(self.flif_encoder_handle, self.mDoCrcCheck)
-        self.Flif.set_lossy(self.flif_encoder_handle, self.mMaxLoss)
+        self.Flif.set_interlaced(self.flif_encoder_handle, self.interlaced)
+        self.Flif.set_learn_repeat(self.flif_encoder_handle, self.learn_repeat)
+        self.Flif.set_split_threshold(self.flif_encoder_handle, self.split_threshold)
+        self.Flif.set_crc_check(self.flif_encoder_handle, self.do_crc_check)
+        self.Flif.set_lossy(self.flif_encoder_handle, self.max_loss)
 
         return self
 
     def close(self):
         if self.flif_encoder_handle is not None:
             try:
-                retval = self.Flif.encode_file(self.flif_encoder_handle, self.fname)
+                retval = self.Flif.encode_file(self.flif_encoder_handle, self.fname.encode('utf-8'))
                 if 1 != retval:
                     raise IOError("Error writing FLIF file %s" % self.fname)
             finally:

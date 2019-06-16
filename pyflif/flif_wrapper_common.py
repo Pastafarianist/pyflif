@@ -1,17 +1,11 @@
 import ctypes as ct
 import logging
 from ctypes.util import find_library
-from pathlib import Path
-
-import numpy as np
 
 __all__ = ["FlifImageBase", "FlifEncoderBase", "FlifDecoderBase"]
 
 Logger = logging.getLogger("FLIF_wrapper_common")
 Logger.setLevel("WARN")
-
-libflif_dir = Path('/usr/lib')
-libflif_name = find_library('flif')
 
 
 class FlifImageBase(object):
@@ -54,26 +48,23 @@ class FlifImageBase(object):
         img_importers = ["RGBA", "RGB", "GRAY", "GRAY16"]
         #                        width        height       data   major-stride
         import_arg_types = [ct.c_uint32, ct.c_uint32, ct.c_void_p, ct.c_uint32]
-        config_import_call = lambda name: config_call_general("flif", name, import_arg_types, ct.c_void_p)
 
         for importer in img_importers:
-            config_import_call("import_image_%s" % importer)
+            config_call_general("flif", "import_image_%s" % importer, import_arg_types, ct.c_void_p)
 
         # Getter functions
         img_getter = ["width", "height", "nb_channels", "depth", "palette_size"]
         getter_res_type = [ct.c_uint32, ct.c_uint32, ct.c_uint8, ct.c_uint8, ct.c_uint32]
-        config_getter_call = lambda name, rtype: config_call_general("flif_image", name, [ct.c_void_p], rtype)
 
         for getter, rtype in zip(img_getter, getter_res_type):
-            config_getter_call("get_%s" % getter, rtype)
+            config_call_general("flif_image", "get_%s" % getter, [ct.c_void_p], rtype)
 
         # Row Reader
         row_reader = ["GRAY8", "GRAY16", "RGBA8", "RGBA16"]
         reader_args = [ct.c_void_p, ct.c_uint32, ct.c_void_p, ct.c_size_t]
-        config_reader_call = lambda name: config_call_general("flif_image", name, reader_args)
 
         for reader in row_reader:
-            config_reader_call("read_row_%s" % reader)
+            config_call_general("flif_image", "read_row_%s" % reader, reader_args)
 
 
 class FlifEncoderBase(object):
@@ -165,8 +156,10 @@ class FlifDecoderBase(object):
 
 
 def _load_libflif():
-    Logger.debug(f"Loading FLIF library from {libflif_dir / libflif_name}")
-    libflif = np.ctypeslib.load_library(libflif_name, str(libflif_dir))
+    libflif_name = find_library('flif')
+    Logger.debug(f"Loading FLIF library from {libflif_name}")
+
+    libflif = ct.cdll[libflif_name]
 
     FlifEncoderBase.initialize(libflif)
     FlifImageBase.initialize(libflif)
