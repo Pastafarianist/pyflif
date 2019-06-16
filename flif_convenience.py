@@ -1,58 +1,45 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Jan 27 20:48:58 2018
+import os.path
 
-@author: Matthias Höffken
-"""
+from flif_image_decoding import FlifDecoder
+from flif_image_encoding import FlifEncoder
+
+try:
+    import scipy.misc
+
+    generic_img_reader = lambda path: scipy.misc.imread(path)
+    generic_img_writer = lambda path, img: scipy.misc.imsave(path, img)
+except ImportError:
+    try:
+        import cv2
+
+        generic_img_reader = lambda path: cv2.imread(path)
+        generic_img_writer = lambda path, img: cv2.imwrite(path, img)
+    except ImportError:
+        generic_img_reader = None
+        generic_img_writer = None
 
 __all__ = ["imwrite", "imread"]
 
 
-import os.path
-from flif_image_encoding import flifEncoder
-from flif_image_decoding import flifDecoder
+def imwrite(path, img):
+    ext = os.path.splitext(path)[1]
 
-
-try:
-    
-    import scipy.misc
-    genericImgReader = lambda pth: scipy.misc.imread(pth)
-    genericImgWriter = lambda pth,img: scipy.misc.imsave(pth,img)
-    
-except ImportError:
-    
-    try:
-        import cv2        
-        genericImgReader = lambda pth: cv2.imread(pth)
-        genericImgWriter = lambda pth,img: cv2.imwrite(pth,img)
-    except ImportError:
-        genericImgReader = None
-        genericImgWriter = None
-
-
-####################################################################################
-
-
-def imwrite( pth, img ):
-    ext = os.path.splitext( pth )[1]
-    
     if ".flif" == ext.lower():
-        with flifEncoder( pth ) as enc:
-            return enc.addImage( img )
-    elif genericImgReader is not None:
-        return genericImgWriter( pth, img )
+        with FlifEncoder(path) as enc:
+            return enc.add_image(img)
+    elif generic_img_reader is not None:
+        return generic_img_writer(path, img)
     else:
-        raise IOError("%r is not a FLIF file" % pth) 
+        raise IOError("%r is not a FLIF file" % path)
 
 
-def imread( pth ):
-    ext = os.path.splitext( pth )[1]
-    
+def imread(path):
+    ext = os.path.splitext(path)[1]
+
     if ".flif" == ext.lower():
-        with flifDecoder( pth ) as dec:
-            return dec.getImage(0)
-    elif genericImgReader is not None:
-        return genericImgReader( pth )
+        with FlifDecoder(path) as dec:
+            return dec.get_image(0)
+    elif generic_img_reader is not None:
+        return generic_img_reader(path)
     else:
-        raise IOError("%r is not a FLIF file" % pth)
-
+        raise IOError("%r is not a FLIF file" % path)
