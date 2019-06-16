@@ -157,7 +157,7 @@ class FlifDecoderBase(object):
 
 def _load_libflif():
     libflif_name = find_library('flif')
-    Logger.debug(f"Loading FLIF library from {libflif_name}")
+    Logger.debug("Loading FLIF library from {}".format(libflif_name))
 
     libflif = ct.cdll[libflif_name]
 

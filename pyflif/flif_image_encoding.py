@@ -56,7 +56,7 @@ class FlifEncoderImage(FlifImageBase):
             img_type = "RGBA"
             importer = (flif.import_image_RGBA,)
         else:
-            raise ValueError(f"Unsupported image shape {np_image.shape!r}")
+            raise ValueError("Unsupported image shape {!r}".format(np_image.shape))
 
         # check dtype
         if np.issubdtype(np_image.dtype, np.uint8):
@@ -64,7 +64,7 @@ class FlifEncoderImage(FlifImageBase):
         elif np.issubdtype(np_image.dtype, np.uint16) and (2 == len(importer)):
             importer = importer[1]
         else:
-            raise TypeError(f"image dtype {np_image.dtype:!r} in combination with {img_type} not supported")
+            raise TypeError("image dtype {:!r} in combination with {} not supported".format(np_image.dtype, img_type))
 
         Logger.info("Importing %s%d image", img_type, np_image.itemsize << 3)
 
