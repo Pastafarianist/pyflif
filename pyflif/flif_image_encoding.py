@@ -3,7 +3,7 @@ import logging
 
 import numpy as np
 
-from flif_wrapper_common import FlifImageBase, FlifEncoderBase
+from pyflif.flif_wrapper_common import FlifImageBase, FlifEncoderBase
 
 __all__ = ["FlifEncoderImage", "FlifEncoder"]
 

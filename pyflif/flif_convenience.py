@@ -1,7 +1,7 @@
 import os.path
 
-from flif_image_decoding import FlifDecoder
-from flif_image_encoding import FlifEncoder
+from pyflif.flif_image_decoding import FlifDecoder
+from pyflif.flif_image_encoding import FlifEncoder
 
 try:
     import scipy.misc
