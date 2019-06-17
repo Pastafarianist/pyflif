@@ -8,6 +8,13 @@ Logger = logging.getLogger("FLIF_wrapper_common")
 Logger.setLevel("WARN")
 
 
+def config_call_general(libflif, struct, flif_prefix, name, argtypes=None, restype=None):
+    setattr(struct, name, libflif.__getitem__("{}_{}".format(flif_prefix, name)))
+    if argtypes is not None:
+        struct.__dict__[name].argtypes = argtypes
+    struct.__dict__[name].restype = restype
+
+
 class FlifImageBase(object):
     class Flif(object):
         get_width = None
@@ -32,17 +39,10 @@ class FlifImageBase(object):
     def initialize(cls, libflif):
         Logger.debug("Initializing FlifImageBase")
 
-        strct = cls.Flif
+        struct = cls.Flif
 
-        strct.destroy_image = libflif.flif_destroy_image
-        strct.destroy_image.argtypes = [ct.c_void_p]
-
-        def config_call_general(flif_prefix, name, argtypes=None, restype=None):
-            setattr(strct, name,
-                    libflif.__getitem__("%s_%s" % (flif_prefix, name)))
-            if argtypes is not None:
-                strct.__dict__[name].argtypes = argtypes
-            strct.__dict__[name].restype = restype
+        struct.destroy_image = libflif.flif_destroy_image
+        struct.destroy_image.argtypes = [ct.c_void_p]
 
         # Image import function
         img_importers = ["RGBA", "RGB", "GRAY", "GRAY16"]
@@ -50,21 +50,21 @@ class FlifImageBase(object):
         import_arg_types = [ct.c_uint32, ct.c_uint32, ct.c_void_p, ct.c_uint32]
 
         for importer in img_importers:
-            config_call_general("flif", "import_image_%s" % importer, import_arg_types, ct.c_void_p)
+            config_call_general(libflif, struct, "flif", "import_image_%s" % importer, import_arg_types, ct.c_void_p)
 
         # Getter functions
         img_getter = ["width", "height", "nb_channels", "depth", "palette_size"]
         getter_res_type = [ct.c_uint32, ct.c_uint32, ct.c_uint8, ct.c_uint8, ct.c_uint32]
 
         for getter, rtype in zip(img_getter, getter_res_type):
-            config_call_general("flif_image", "get_%s" % getter, [ct.c_void_p], rtype)
+            config_call_general(libflif, struct, "flif_image", "get_%s" % getter, [ct.c_void_p], rtype)
 
         # Row Reader
         row_reader = ["GRAY8", "GRAY16", "RGBA8", "RGBA16"]
         reader_args = [ct.c_void_p, ct.c_uint32, ct.c_void_p, ct.c_size_t]
 
         for reader in row_reader:
-            config_call_general("flif_image", "read_row_%s" % reader, reader_args)
+            config_call_general(libflif, struct, "flif_image", "read_row_%s" % reader, reader_args)
 
 
 class FlifEncoderBase(object):
@@ -85,23 +85,19 @@ class FlifEncoderBase(object):
 
     @classmethod
     def initialize(cls, libflif):
-        Logger.debug("Initializing flifEncoder")
+        Logger.debug("Initializing FlifEncoder")
 
-        strct = cls.Flif
+        struct = cls.Flif
 
-        strct.create_encoder = libflif.flif_create_encoder
-        strct.create_encoder.restype = ct.c_void_p
+        struct.create_encoder = libflif.flif_create_encoder
+        struct.create_encoder.restype = ct.c_void_p
 
-        strct.destroy_encoder = libflif.flif_destroy_encoder
-        strct.destroy_encoder.restype = None
-        strct.destroy_encoder.argtypes = [ct.c_void_p]
+        struct.destroy_encoder = libflif.flif_destroy_encoder
+        struct.destroy_encoder.restype = None
+        struct.destroy_encoder.argtypes = [ct.c_void_p]
 
         def config_call(name, argtypes=None, restype=None):
-            setattr(strct, name,
-                    libflif.__getitem__("flif_encoder_%s" % name))
-            if argtypes is not None:
-                strct.__dict__[name].argtypes = argtypes
-            strct.__dict__[name].restype = restype
+            config_call_general(libflif, struct, "flif_encoder", name, argtypes, restype)
 
         config_call("encode_file", [ct.c_void_p, ct.c_char_p], ct.c_int32)
         config_call("add_image", [ct.c_void_p, ct.c_void_p])
@@ -127,23 +123,19 @@ class FlifDecoderBase(object):
 
     @classmethod
     def initialize(cls, libflif):
-        Logger.debug("Initializing flifDecoder")
+        Logger.debug("Initializing FlifDecoder")
 
-        strct = cls.Flif
+        struct = cls.Flif
 
-        strct.create_decoder = libflif.flif_create_decoder
-        strct.create_decoder.restype = ct.c_void_p
+        struct.create_decoder = libflif.flif_create_decoder
+        struct.create_decoder.restype = ct.c_void_p
 
-        strct.destroy_decoder = libflif.flif_destroy_decoder
-        strct.destroy_decoder.restype = None
-        strct.destroy_decoder.argtypes = [ct.c_void_p]
+        struct.destroy_decoder = libflif.flif_destroy_decoder
+        struct.destroy_decoder.restype = None
+        struct.destroy_decoder.argtypes = [ct.c_void_p]
 
         def config_call(name, argtypes=None, restype=None):
-            setattr(strct, name,
-                    libflif.__getitem__("flif_decoder_%s" % name))
-            if argtypes is not None:
-                strct.__dict__[name].argtypes = argtypes
-            strct.__dict__[name].restype = restype
+            config_call_general(libflif, struct, "flif_decoder", name, argtypes, restype)
 
         config_call("decode_file", [ct.c_void_p, ct.c_char_p], ct.c_int32)
         config_call("set_crc_check", [ct.c_void_p, ct.c_uint32])
