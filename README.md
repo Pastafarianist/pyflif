@@ -1,5 +1,4 @@
-﻿# pyFLIF: ctypes based Python wrapper for Free Lossless Image Format
-
+# `pyflif`: `ctypes`-based Python wrapper for Free Lossless Image Format
 
 ## Build Instructions
 
@@ -7,21 +6,25 @@
 
 #### FLIF dependencies
 
-pyFLIF imports the [FLIF](https://github.com/FLIF-hub/FLIF) library as a sub-module. Please have a look [here](https://github.com/FLIF-hub/FLIF#install-the-dependencies) for [FLIF](https://github.com/FLIF-hub/FLIF) library dependencies.
+`pyflif` dynamically loads the [FLIF](https://github.com/FLIF-hub/FLIF) library. Please ensure that you have it installed, e.g.:
 
-#### pyFLIF dependencies
+```bash
+$ ldconfig -p | grep flif
+    libflif_dec.so.0 (libc6,x86-64) => /usr/lib/libflif_dec.so.0
+    libflif.so.0 (libc6,x86-64) => /usr/lib/libflif.so.0
+```
+
+#### `pyflif` dependencies
 
  - numpy: `sudo apt-get install python-numpy` (on debian/ubuntu)
  - scipy (optional): `sudo apt-get install python-scipy` (on debian/ubuntu)
  - opencv (optional): `sudo apt-get install python-opencv` (on debian/ubuntu)
 
-#### Checkout + Compile
+#### Installation
 
-    git clone https://github.com/charun80/pyFLIF
-    cd pyFLIF
-    git submodule init
-    git submodule update
-    make
+```bash
+pip install --user git+https://github.com/Pastafarianist/pyflif.git
+```
 
 ## Usage
 
@@ -29,33 +32,45 @@ pyFLIF imports the [FLIF](https://github.com/FLIF-hub/FLIF) library as a sub-mod
 
 #### Simple method for single images
 
-    import pyFLIF
-    
-    img = pyFLIF.imread( "path_to/image.flif" ) # numpy array with shape [ WxH(x3/4) ]
+```python
+import pyflif
+
+# img: numpy array with shape [ WxHx(3 or 4) ]
+# dtype in (uint8, uint16)
+img = pyflif.read_flif("path/to/image.flif")
+```
 
 #### Advanced method also for animations
 
+```python
+import pyflif
 
-    import pyFLIF
-    
-    with pyFLIF.flifDecoder( "path_to/file.flif" ) as dec:
-	    # decompressing all frames and storing them in a list
-	    allframes = [ dec.getImage(idx) for idx in xrange(dec.numImages())
+with pyflif.FlifDecoder("path/to/file.flif") as dec:
+    # decompress all frames and store them in a list
+    allframes = [dec.get_image(idx) for idx in range(dec.num_images())]
+```
+
 ### Encoding
+
+WARNING: [encoding does not work yet](https://github.com/Pastafarianist/pyflif/issues/1).
 
 #### Simple method for single images
 
-    import pyFLIF
-    
-    # img: numpy array with shape [ WxH(x3/4 ]
-    # dtype in (uint8, uint16)
-    pyFLIF.imwrite( "path_to/image.flif", img ) 
+```python
+import pyflif
+
+# img: numpy array with shape [ WxHx(3 or 4) ]
+# dtype in (uint8, uint16)
+pyflif.write_flif("path/to/image.flif", img)
+```
 
 #### Advanced method also for animations
 
-    import pyFLIF
-    
-    with pyFLIF.flifEncoder( "path_to/file.flif" ) as enc:
-	    for img in <image source>:
-		    # all img shall have same shape [ WxH(x3/4) ] and dtype (uint8/uint16)
-		    enc.addImage( img )]
+```python
+import pyflif
+
+with pyflif.FlifEncoder("path/to/file.flif") as enc:
+    for img in <image source>:
+	    # all images should have the same shape [ WxHx(3 or 4) ] and dtype (uint8/uint16)
+	    enc.add_image(img)
+```
